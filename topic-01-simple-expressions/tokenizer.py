@@ -75,7 +75,7 @@ def test_operators():
     print("test tokenize operators")
     t = tokenize("+ - * / ( )")
     tags = [tok["tag"] for tok in t]
-    assert tags == ["+", "-", "*", "/", None]
+    assert tags == ["+", "-", "*", "/", "(", ")", None]
 
 def test_expressions():
     print("test tokenize expressions")
