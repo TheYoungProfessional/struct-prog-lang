@@ -7,7 +7,7 @@ from pprint import pprint
 
 #   expression = term { ("+" | "-") term }
 #   term = factor { ("*" | "/") factor }
-#   factor = <number>
+#   factor = <number> | "("expression")"
 
 
 def parse_factor(tokens):
@@ -15,6 +15,11 @@ def parse_factor(tokens):
     token = tokens[0]
     if token["tag"] == "number":
         node = {"tag": "number", "value": token["value"]}
+        return node, tokens[1:]
+    if token["tag"] == "(":
+        node, tokens = parse_expression(tokens[1:])
+        if tokens[0]["tag"] != ")":
+            raise SyntaxError(f"Expected ')', got {tokens[0]}")
         return node, tokens[1:]
     assert False, f"Expected number, got {token}"
 
@@ -26,7 +31,11 @@ def test_parse_factor():
     ast, tokens = parse_factor(tokens)
     assert ast == {"tag": "number", "value": 3}
     assert tokens == [{"tag": None, "line": 1, "column": 2}]
-
+    tokens = tokenize("(3+4)")
+    ast, tokens = parse_factor(tokens)
+    print(ast, tokens)
+    #lost me here
+    exit
 
 def parse_term(tokens):
     """term = factor { ("*" | "/") factor }"""
