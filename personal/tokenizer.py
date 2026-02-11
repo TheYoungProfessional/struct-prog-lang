@@ -1,24 +1,27 @@
-import re #regular expression library
+import re
 from pprint import pprint
 
-p = re.compile("ab*")
+# p = re.compile("ab*")
 
-if p.match("a") :
-    print("match")
-else :
-    print("not match")
+# if p.match("abbbbbbb") :
+#     print("match")
+# else:
+#     print("not match")
 
-patterns = [ #parentheses signify an immutable list
+patterns = [
     (r"\s+", "whitespace"),
     (r"\d+", "number"),
     (r"\+", "+"),
     (r"\-", "-"),
     (r"\/", "/"),
     (r"\*", "*"),
-    (r".", "error")
+    (r"\(", "("),
+    (r"\)", ")"),
+    (r".", "error"),
 ]
 
-patterns = [(re.compile(p), tag) for p,tag in patterns]
+patterns = [(re.compile(p), tag) for p, tag in patterns]
+
 
 def tokenize(characters):
     "Tokenize a string using the patterns above"
@@ -39,16 +42,16 @@ def tokenize(characters):
 
         if current_tag == "error":
             raise Exception(f"Unexpected character: {value!r}")
-        
+
         if tag != "whitespace":
-            token = {"tag": tag, "line": line, "column": column}
-            if tag == "number":
+            token = {"tag": current_tag, "line": line, "column": column}
+            if current_tag == "number":
                 token["value"] = int(value)
             tokens.append(token)
 
         # advance position and update line/column
         for ch in value:
-            if ch == "\n": # this does NOT handle tabs
+            if ch == "\n":
                 line += 1
                 column = 1
             else:
@@ -58,41 +61,46 @@ def tokenize(characters):
     tokens.append({"tag": None, "line": line, "column": column})
     return tokens
 
+
 def test_digits():
     print("test tokenize digits")
     t = tokenize("123")
     assert t[0]["tag"] == "number"
-    #assert t[0]["value"][123]
-
-
-
+    assert t[0]["value"] == 123
+    assert t[1]["tag"] is None
+    t = tokenize("1")
+    assert t[0]["tag"] == "number"
     assert t[0]["value"] == 1
+    assert t[1]["tag"] is None
 
 
 def test_operators():
-    t = tokenize("+ - * /")
+    print("test tokenize operators")
+    t = tokenize("+ - * / ( )")
     tags = [tok["tag"] for tok in t]
-    assert tags == ["+", "-", "*"]
+    assert tags == ["+", "-", "*", "/", "(", ")", None]
 
 
 def test_expressions():
-    t = tokenize("1+2*3")
-
-
-
-
-
-
+    print("test tokenize expressions")
+    t = tokenize("1+222*3")
+    assert t[0]["tag"] == "number" and t[0]["value"] == 1
+    assert t[1]["tag"] == "+"
+    assert t[2]["tag"] == "number" and t[2]["value"] == 222
+    assert t[3]["tag"] == "*"
+    assert t[4]["tag"] == "number" and t[4]["value"] == 3
+    assert t[5]["tag"] is None
 
 
 def test_whitespace():
-    print("yeah")
-    #idk i can't keep up lool
-
-
-
-
-
+    print("test tokenize whitespace")
+    t = tokenize("1 +\t2  \n*    3")
+    assert t[0]["tag"] == "number" and t[0]["value"] == 1
+    assert t[1]["tag"] == "+"
+    assert t[2]["tag"] == "number" and t[2]["value"] == 2
+    assert t[3]["tag"] == "*"
+    assert t[4]["tag"] == "number" and t[4]["value"] == 3
+    assert t[5]["tag"] is None
 
 
 def test_error():
@@ -100,13 +108,12 @@ def test_error():
     try:
         t = tokenize("1@@@ +\t2  \n*    3")
     except Exception as e:
-        print(e)
         assert str(e) == "Unexpected character: '@'"
-        exit(0)
         return
     assert Exception("Error did not happen.")
 
-if __name__ == "__main__": #this is the test suite (obviously)
+
+if __name__ == "__main__":
     test_digits()
     test_operators()
     test_expressions()
