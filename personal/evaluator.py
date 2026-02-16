@@ -11,6 +11,8 @@ def evaluate(ast):
         return evaluate(ast["left"]) * evaluate(ast["right"])
     elif ast["tag"] == "/":
         return evaluate(ast["left"]) / evaluate(ast["right"])
+    elif ast["tag"] == "%":
+        return evaluate(ast["left"]) % evaluate(ast["right"])
     else:
         raise ValueError(f"Unknown AST node: {ast}")
 

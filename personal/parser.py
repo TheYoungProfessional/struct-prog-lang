@@ -6,7 +6,7 @@ from pprint import pprint
 # EBNF
 
 #   expression = term { ("+" | "-") term }
-#   term = factor { ("*" | "/") factor }
+#   term = factor { ("*" | "/" | "%") factor }
 #   factor = <number> | "(" expression ")"
 
 
@@ -39,9 +39,9 @@ def test_parse_factor():
 
 
 def parse_term(tokens):
-    """term = factor { ("*" | "/") factor }"""
+    """term = factor { ("*" | "/" | "%") factor }"""
     left, tokens = parse_factor(tokens)
-    while tokens[0]["tag"] in ["*", "/"]:
+    while tokens[0]["tag"] in ["*", "/", "%"]:
         op = tokens[0]["tag"]
         right, tokens = parse_factor(tokens[1:])
         left = {"tag": op, "left": left, "right": right}
@@ -49,7 +49,7 @@ def parse_term(tokens):
 
 
 def test_parse_term():
-    """term = factor { ("*" | "/") factor }"""
+    """term = factor { ("*" | "/" | "%") factor }"""
     print("test parse_term()")
     tokens = tokenize("3")
     ast, tokens = parse_term(tokens)
@@ -83,6 +83,14 @@ def test_parse_term():
         "tag": "*",
     }
     assert tokens == [{"column": 6, "line": 1, "tag": None}]
+    tokens = tokenize("5%2")
+    ast, tokens = parse_term(tokens)
+    assert ast == {
+        "left": {"tag": "number", "value": 5},
+        "right": {"tag": "number", "value": 2},
+        "tag": "%",
+    }
+    assert tokens == [{"column": 4, "line": 1, "tag": None}]
 
 
 def parse_expression(tokens):
