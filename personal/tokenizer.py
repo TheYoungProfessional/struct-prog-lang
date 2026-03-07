@@ -1,6 +1,13 @@
 import re
 from pprint import pprint
 
+# p = re.compile("ab*")
+
+# if p.match("abbbbbbb") :
+#     print("match")
+# else:
+#     print("not match")
+
 patterns = [
     (r"\s+", "whitespace"),
     (r"\d+", "number"),
@@ -36,7 +43,7 @@ def tokenize(characters):
         if current_tag == "error":
             raise Exception(f"Unexpected character: {value!r}")
 
-        if current_tag != "whitespace":
+        if tag != "whitespace":
             token = {"tag": current_tag, "line": line, "column": column}
             if current_tag == "number":
                 token["value"] = int(value)
@@ -70,7 +77,7 @@ def test_digits():
 def test_operators():
     print("test tokenize operators")
     t = tokenize("+ - * / ( )")
-    tags = [token["tag"] for token in t]
+    tags = [tok["tag"] for tok in t]
     assert tags == ["+", "-", "*", "/", "(", ")", None]
 
 
@@ -99,11 +106,11 @@ def test_whitespace():
 def test_error():
     print("test tokenize error")
     try:
-        tokenize("1@@@ +\t2  \n*    3")
+        t = tokenize("1@@@ +\t2  \n*    3")
     except Exception as e:
         assert str(e) == "Unexpected character: '@'"
         return
-    raise Exception("Error did not happen.")
+    assert Exception("Error did not happen.")
 
 
 if __name__ == "__main__":
