@@ -14,5 +14,4 @@ if __name__ == "__main__":
             expression = f.read().strip()
     tokens = tokenize(expression)
     ast = parse(tokens)
-    result = evaluate(ast, {"x": 3})
-    print(result)
+    evaluate(ast, {})
