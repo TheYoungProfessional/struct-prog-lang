@@ -12,7 +12,8 @@ from pprint import pprint
 #   while_statement = "while" "(" expression ")" "{" statement_list "}"
 #   assignment_statement = <identifier> "=" expression
 #   function_statement = "function" identifier "(" [ identifier { "," identifier } ] ")" "{" statement_list "}"
-#   statement = print_statement | if_statement | while_statement | function_statement | assignment_statement
+#   return_statement = "return" [ expression ]
+#   statement = print_statement | if_statement | while_statement | function_statement | assignment_statement | return_statement
 
 #   expression = logic_or
 #   logic_or   = logic_and { ("or" | "||")  logic_and }
@@ -162,20 +163,40 @@ def parse_function_statement(tokens):
     ] + tokens
     return parse_assignment_statement(tokens)
 
+
 def test_parse_function_expression():
     print("test parse_function_expression()")
     tokens = tokenize("function(){}")
     ast, tokens = parse_unary(tokens)
-    assert ast == {'tag': 'function', 'parameters': [], 'body': {'tag': 'statement_list', 'statements': []}}
+    assert ast == {
+        "tag": "function",
+        "parameters": [],
+        "body": {"tag": "statement_list", "statements": []},
+    }
     assert tokens[0]["tag"] == None
 
     tokens = tokenize("function(a,b){a=2;b=4}")
     ast, tokens = parse_unary(tokens)
-    assert ast == {'tag': 'function', 'parameters': ['a', 'b'], 'body': {'tag': 'statement_list', 'statements': [{'tag': 'assign', 'target': 'a', 'expression': {'tag': 'number', 'value': 2}}, {'tag': 'assign', 'target': 'b', 'expression': {'tag': 'number', 'value': 4}}]}}
+    assert ast == {
+        "tag": "function",
+        "parameters": ["a", "b"],
+        "body": {
+            "tag": "statement_list",
+            "statements": [
+                {
+                    "tag": "assign",
+                    "target": "a",
+                    "expression": {"tag": "number", "value": 2},
+                },
+                {
+                    "tag": "assign",
+                    "target": "b",
+                    "expression": {"tag": "number", "value": 4},
+                },
+            ],
+        },
+    }
     assert tokens[0]["tag"] == None
-    
-
-
 
 
 # ===== END TOPIC-05 CHANGES =====
@@ -576,6 +597,37 @@ def test_parse_print_statement():
     assert tokens[0]["tag"] == None
 
 
+def parse_return_statement(tokens):
+    # return_statement = "return" [ expression ]
+    assert tokens[0]["tag"] == "return", "Expected 'return'"
+    tokens = tokens[1:]
+    if tokens[0]["tag"] not in ["}", ";", None]:
+        ast, tokens = parse_expression(tokens)
+        return {"tag": "return", "expression": ast}, tokens
+    return {"tag": "return"}, tokens
+
+
+def test_parse_return_statement():
+    # return_statement = "return" [ expression ]
+    print("test parse_return_statement()")
+    tokens = tokenize("return 1")
+    ast, tokens = parse_return_statement(tokens)
+    assert ast == {"tag": "return", "expression": {"tag": "number", "value": 1}}
+    assert tokens[0]["tag"] == None
+    tokens = tokenize("return")
+    ast, tokens = parse_return_statement(tokens)
+    assert ast == {"tag": "return"}
+    assert tokens[0]["tag"] == None
+    tokens = tokenize("return;")
+    ast, tokens = parse_return_statement(tokens)
+    assert ast == {"tag": "return"}
+    assert tokens[0]["tag"] == ";"
+    tokens = tokenize("return}")
+    ast, tokens = parse_return_statement(tokens)
+    assert ast == {"tag": "return"}
+    assert tokens[0]["tag"] == "}"
+
+
 def parse_if_statement(tokens):
     # if_statement = "if" "(" expression ")" "{" statement_list "}" [ "else" "{" statement_list "}" ]
     assert tokens[0]["tag"] == "if", "Expected 'if'"
@@ -720,6 +772,8 @@ def parse_statement(tokens):
         return parse_while_statement(tokens)
     if tokens[0]["tag"] == "function":
         return parse_function_statement(tokens)
+    if tokens[0]["tag"] == "return":
+        return parse_return_statement(tokens)
     if tokens[0]["tag"] == "identifier":
         return parse_assignment_statement(tokens)
     raise SyntaxError(f"Expected statement, got {tokens[0]}")
@@ -911,6 +965,7 @@ if __name__ == "__main__":
     test_parse_logic_or()
     test_parse_expression()
     test_parse_print_statement()
+    test_parse_return_statement()
     test_parse_if_statement()
     test_parse_while_statement()
     test_parse_assignment_statement()
