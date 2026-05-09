@@ -13,7 +13,11 @@ patterns = [
     [r"if", "if"],  # if keyword
     [r"else", "else"],  # else keyword
     [r"while", "while"],  # while keyword
+    #USING THIS
     [r"for", "for"],  # for keyword
+    #MY ADDITION
+    [r"in\b", "in"],  # in keyword
+    #
     [r"break", "break"],  # break keyword
     [r"continue", "continue"],  # continue keyword
     [r"print", "print"],  # print keyword
@@ -267,6 +271,9 @@ def test_keywords():
         "else",
         "while",
         "for",
+        #MY ADDITION
+        "in",
+        #
         "break",
         "continue",
         "assert",

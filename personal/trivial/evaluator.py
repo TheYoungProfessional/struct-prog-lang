@@ -118,6 +118,17 @@ def ast_to_string(ast):
             + "}"
         )
 
+    #MY ADDITION
+    if ast["tag"] == "for":
+        s = (
+            "for ("
+            + ast_to_string(ast["condition"])
+            + ") {"
+            + ast_to_string(ast["do"])
+            + "}"
+        )
+    #
+
     if ast["tag"] == "statement_list":
         items = []
         for item in ast["statements"]:
@@ -491,6 +502,33 @@ def evaluate(ast, environment):
             if cond_status == "exit":
                 return condition_value, "exit"
         return None, None  # Normal loop termination (condition false or break occurred)
+    
+    #MY ADDITION
+    if ast["tag"] == "for":
+        iterable_value, iter_status = evaluate(ast["iterable"], environment)
+        if iter_status == "exit":
+            return iterable_value, "exit"
+        if isinstance(iterable_value, list):
+            items = iterable_value
+        elif isinstance(iterable_value, dict):
+            items = list(iterable_value.keys())
+        else:
+            raise Exception(f"'for' loop requires a list or object, got {type(iterable_value)}")
+
+        loop_var_name = ast["variable"]  # already a plain string from the parser
+        result = None
+        for item in items:
+            environment[loop_var_name] = item
+            result, body_status = evaluate(ast["body"], environment)
+            if body_status in ("return", "exit"):
+                return result, body_status
+            if body_status == "break":
+                break
+            if body_status == "continue":
+                continue
+
+        return result, None
+    #
 
     if ast["tag"] == "statement_list":
         last_value = None
@@ -798,6 +836,12 @@ def test_evaluate_while_statement():
     equals("while(0) {x=1}", {}, None, {})
     equals("x=1; while(x<5) {x=x+1}; y=3", {}, 3, {"x": 5, "y": 3})
 
+#MY ADDITION
+def test_evaluate_for_in_statement():
+    print("testing evaluate_for_in_statement")
+    equals("for (x in []) {y=1}", {}, None, {})
+    equals("for (x in [1,2,3]) {y=x}", {}, 3, {"x": 3, "y": 3})
+#
 
 def test_evaluate_assignment_statement():
     print("test evaluate_assignment_statement")
@@ -1235,6 +1279,7 @@ if __name__ == "__main__":
     test_evaluate_print_statement()
     test_evaluate_if_statement()
     test_evaluate_while_statement()
+    test_evaluate_for_in_statement()  # MY ADDITION
     test_evaluate_assignment_statement()
     test_evaluate_function_literal()
     test_evaluate_function_call()

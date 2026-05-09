@@ -27,6 +27,9 @@ grammar = """
 
     if_statement = "if" "(" expression ")" statement_list [ "else" (if_statement | statement_list) ]
     while_statement = "while" "(" expression ")" statement_list
+
+    for_in_statement = "for" "(" identifier "in" list ")" statement_list
+    
     statement_list = "{" statement { ";" statement } "}"
     exit_statement = "exit" [ expression ]
     assert_statement = "assert" expression [ "," expression ]
@@ -1199,6 +1202,76 @@ def test_parse_while_statement():
         },
     }
 
+#MY ADDITION
+def parse_for_in_statement(tokens):
+    """
+    for_in_statement = "for" "(" identifier "in" expression ")" statement_list
+    """
+    assert tokens[0]["tag"] == "for"
+    tokens = tokens[1:]
+    
+    if tokens[0]["tag"] != "(":
+        raise Exception(f"Expected '(': {tokens[0]}")
+    tokens = tokens[1:]  # consume "("
+    
+    if tokens[0]["tag"] != "identifier":
+        raise Exception(f"Expected identifier: {tokens[0]}")
+    variable = tokens[0]["value"]  # save the loop variable name
+    tokens = tokens[1:]  # consume the identifier
+    
+    if tokens[0]["tag"] != "in":
+        raise Exception(f"Expected 'in': {tokens[0]}")
+    tokens = tokens[1:]  # consume "in"
+    
+    iterable, tokens = parse_expression(tokens)  # parse the iterable
+    
+    if tokens[0]["tag"] != ")":
+        raise Exception(f"Expected ')': {tokens[0]}")
+    tokens = tokens[1:]  # consume ")"
+    
+    body, tokens = parse_statement_list(tokens)
+    
+    return {"tag": "for", "variable": variable, "iterable": iterable, "body": body}, tokens
+#
+
+#MY ADDITION
+def test_parse_for_in_statement():
+    """
+    for_in_statement = "for" "(" identifier "in" expression ")" statement_list
+    """
+    print("testing parse_for_in_statement...")
+
+    # basic list iterable
+    ast = parse_for_in_statement(tokenize("for(x in [1,2]){print x}"))[0]
+    assert ast == {
+        "tag": "for",
+        "variable": "x",
+        "iterable": {
+            "tag": "list",
+            "items": [
+                {"tag": "number", "value": 1},
+                {"tag": "number", "value": 2},
+            ],
+        },
+        "body": {
+            "tag": "statement_list",
+            "statements": [{"tag": "print", "value": {"tag": "identifier", "value": "x"}}],
+        },
+    }
+
+    # empty list
+    ast = parse_for_in_statement(tokenize("for(x in []){y=1}"))[0]
+    assert ast["tag"] == "for"
+    assert ast["variable"] == "x"
+    assert ast["iterable"] == {"tag": "list", "items": []}
+
+    # iterable is a variable reference, not a literal
+    ast = parse_for_in_statement(tokenize("for(item in myList){print item}"))[0]
+    assert ast["tag"] == "for"
+    assert ast["variable"] == "item"
+    assert ast["iterable"] == {"tag": "identifier", "value": "myList"}
+#
+
 
 def parse_return_statement(tokens):
     """
@@ -1405,7 +1478,7 @@ def test_parse_function_statement():
 
 def parse_statement(tokens):
     """
-    statement = if_statement | while_statement | function_statement | return_statement | print_statement | exit_statement | import_statement | break_statement | continue_statement | assert_statement | expression
+    statement = if_statement | while_statement | for_in_statement | function_statement | return_statement | print_statement | exit_statement | import_statement | break_statement | continue_statement | assert_statement | expression
     """
     tag = tokens[0]["tag"]
     # note: none of these consumes a token
@@ -1413,6 +1486,8 @@ def parse_statement(tokens):
         return parse_if_statement(tokens)
     if tag == "while":
         return parse_while_statement(tokens)
+    if tag == "for":
+        return parse_for_in_statement(tokens)
     if tag == "function":
         return parse_function_statement(tokens)
     if tag == "return":
@@ -1434,7 +1509,7 @@ def parse_statement(tokens):
 
 def test_parse_statement():
     """
-    statement = if_statement | while_statement | function_statement | return_statement | print_statement | exit_statement | import_statement | break_statement | continue_statement | assert_statement | expression
+    statement = if_statement | while_statement | for_in_statement | function_statement | return_statement | print_statement | exit_statement | import_statement | break_statement | continue_statement | assert_statement | expression
     """
     print("testing parse_statement...")
 
@@ -1443,10 +1518,15 @@ def test_parse_statement():
         parse_statement(tokenize("if(1){print 1}"))[0]
         == parse_if_statement(tokenize("if(1){print 1}"))[0]
     )
-    # # while statement
+    # while statement
     assert (
         parse_statement(tokenize("while(1){print 1}"))[0]
         == parse_while_statement(tokenize("while(1){print 1}"))[0]
+    )
+    # for_in statement
+    assert (
+        parse_statement(tokenize("for(x in [1, 2]){print x}"))[0]
+        == parse_for_in_statement(tokenize("for(x in [1, 2]){print x}"))[0]
     )
     # return statement
     assert (
@@ -1606,6 +1686,7 @@ if __name__ == "__main__":
         test_parse_statement_list,
         test_parse_if_statement,
         test_parse_while_statement,
+        test_parse_for_in_statement,
         test_parse_return_statement,
         test_parse_print_statement,
         test_parse_function_statement,
@@ -1620,6 +1701,33 @@ if __name__ == "__main__":
 
     test_functions = [
         test_parse_simple_expression,
+        test_parse_list,
+        test_parse_object,
+        test_parse_function,
+        test_parse_complex_expression,
+        test_parse_arithmetic_factor,
+        test_parse_arithmetic_term,
+        test_parse_arithmetic_expression,
+        test_parse_relational_expression,
+        test_parse_logical_factor,
+        test_parse_logical_term,
+        test_parse_logical_expression,
+        test_parse_assignment_expression,
+        test_parse_expression,
+        test_parse_statement_list,
+        test_parse_if_statement,
+        test_parse_while_statement,
+        test_parse_for_in_statement,
+        test_parse_return_statement,
+        test_parse_print_statement,
+        test_parse_function_statement,
+        test_parse_exit_statement,
+        test_parse_break_statement,
+        test_parse_continue_statement,
+        test_parse_import_statement,
+        test_parse_assert_statement,
+        test_parse_statement,
+        test_parse_program,
     ]
     test_grammar = grammar
 
